@@ -1,0 +1,12 @@
+{
+  "name": "runnershub-vercel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GPX Running Hub — migrated from Google Apps Script to Vercel, still using Google Sheets + Drive as the database.",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "googleapis": "^140.0.1"
+  }
+}

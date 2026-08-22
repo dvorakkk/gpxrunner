@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/call.js": {
+      "maxDuration": 30
+    }
+  }
+}
