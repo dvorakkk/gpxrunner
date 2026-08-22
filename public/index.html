@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>GPX Running Hub</title>
+<title>runnerGPX</title>
+<meta name="description" content="runnerGPX — Trail &amp; Road running route database, GPX downloads, and map art."/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 /* ═══════════════════════════════════════════════════════════
@@ -585,7 +586,7 @@ textarea.form-input{resize:vertical;min-height:80px}
      LOADING SCREEN
 ═══════════════════════════════════════════════════════════ -->
 <div id="loading">
-  <div class="loader-logo">RUNNERS HUB <span class="trail">Trail</span> &amp; <span class="road">Road</span> Hub</div>
+  <div class="loader-logo">runner<span class="trail">GPX</span></div>
   <div class="loader-bar"><div class="loader-bar-fill"></div></div>
   <div class="loader-text">Initializing…</div>
 </div>
@@ -596,7 +597,7 @@ textarea.form-input{resize:vertical;min-height:80px}
 <div id="app" style="display:none">
 
   <nav id="navbar">
-    <div class="nav-logo">GPX <span class="t">Trail</span>&amp;<span class="r">Road</span></div>
+    <div class="nav-logo">runner<span class="t">GPX</span></div>
     <div class="nav-tabs">
       <button class="nav-tab active" data-tab="home">
         <span class="tab-icon">🏠</span><span class="tab-label">Home</span>
@@ -1801,10 +1802,6 @@ function buildRouteCard(route, mapContainerId) {
             data-route-name="${escHtml(route.route_name)}">
       💬 <span class="comment-count">${commentsCnt}</span> Comments
     </button>
-    ${hasGpx ? `<button type="button" class="comment-btn download-btn"
-            data-route-id="${escHtml(route.route_id)}">
-      ⬇️ GPX
-    </button>` : ''}
     <div class="card-credit-wrap">
       ${credit ? `<span class="card-credit" title="${escHtml(route.details)}">📝 ${escHtml(credit)}</span>` : ''}
       <span class="card-date">${fmtDate(route.timestamp)}</span>
