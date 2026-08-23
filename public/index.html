@@ -83,6 +83,18 @@ a{color:var(--sky);text-decoration:none}
   color:var(--text-pri);margin-right:24px;white-space:nowrap}
 .nav-logo .t{color:var(--emerald)}
 .nav-logo .r{color:var(--sky)}
+#site-footer{
+  text-align:center;
+  padding:18px 16px 22px;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.3px;
+  color:var(--text-dim);
+  border-top:1px solid var(--border);
+  margin-top:8px;
+}
+#site-footer .fc-a{color:var(--emerald)}
+#site-footer .fc-m{color:var(--sky)}
 .nav-tabs{display:flex;gap:2px;flex:1}
 .nav-tab{
   display:flex;align-items:center;gap:7px;padding:8px 16px;
@@ -845,6 +857,9 @@ textarea.form-input{resize:vertical;min-height:80px}
     </div><!-- /tab-upload -->
 
   </div><!-- /page-content -->
+
+  <footer id="site-footer">Solo-built by <span class="fc-a">A</span><span class="fc-m">M</span>, fueled by trail runs</footer>
+
 </div><!-- /app -->
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -2312,7 +2327,7 @@ async function publishRoute() {
   btn.textContent = '⏳ Publishing…';
 
   let simPct = 6;
-  const label = '🚀 Uploading to Google Drive & Sheets…';
+  const label = '🚀 Uploading wait a moments…';
   setUploadProgress(simPct, label);
   const simTimer = setInterval(() => {
     const remaining = 90 - simPct;
