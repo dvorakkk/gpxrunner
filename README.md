@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/31348926/README.md)
 # Runnershub — Vercel + Google Sheets/Drive (tanpa Apps Script)
 
 Ini adalah migrasi dari **Runnershub** (awalnya 100% Google Apps Script) ke
