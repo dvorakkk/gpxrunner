@@ -24,69 +24,79 @@ ulang** — tidak perlu pindah data.
 
 ---
 
-## Langkah 1 — Buat Service Account di Google Cloud
+## Langkah 1 — Setup Otentikasi Google
 
-Service Account adalah "akun robot" yang dipakai Vercel untuk baca/tulis ke
-Sheets & Drive kamu (menggantikan peran "kamu sebagai pemilik script" di
-Apps Script).
+Ada dua cara aplikasi ini bisa akses Sheets & Drive kamu. **Pilih salah satu** sesuai jenis akun Google-mu:
 
-1. Buka [Google Cloud Console](https://console.cloud.google.com/).
-2. Buat project baru (atau pakai yang sudah ada).
-3. Di menu **APIs & Services → Library**, aktifkan dua API ini:
-   - **Google Sheets API**
-   - **Google Drive API**
-4. Buka **APIs & Services → Credentials → Create Credentials → Service Account**.
-   - Nama bebas, mis. `runnershub-backend`.
-   - Role: tidak perlu diberi role project-level apa pun (akses diatur lewat
-     sharing di langkah 2), klik lanjut/selesai saja.
-5. Setelah service account dibuat, klik masuk ke dalamnya → tab **Keys**
-   → **Add Key → Create new key → JSON**. File `.json` akan otomatis
-   terdownload — **simpan baik-baik, ini kredensial sensitif**.
-6. Catat alamat email service account-nya, formatnya seperti:
-   `runnershub-backend@nama-project.iam.gserviceaccount.com`
+| Jenis Akun | Cara |
+|---|---|
+| Gmail pribadi (termasuk yang beli storage tambahan via Google One) | **OAuth2** (bagian 1A) |
+| Google Workspace dengan akses bikin Shared Drive | Service Account + Shared Drive (bagian 1B) |
 
-## Langkah 2 — Share Spreadsheet & folder Drive ke Service Account
+Kalau ragu, cek dulu: buka [drive.google.com](https://drive.google.com), lihat sidebar kiri — ada menu **"Shared drives"**? Kalau tidak ada, pakai **OAuth2**.
 
-Service account **tidak otomatis punya akses** ke Sheet/Drive kamu — harus
-di-share manual, seperti share ke orang lain:
+### 1A — OAuth2 (akun Gmail pribadi)
 
-1. Buka Google Sheet yang dipakai Runnershub (Spreadsheet ID:
-   `1MVVsZSRli0Sn8qHoG_8jwxioeZ-pA0Q14FDqdZ2ESKk` — sesuaikan kalau beda).
-   Klik **Share**, tempel email service account, beri akses **Editor**.
-2. Buka folder Drive `GPX_Run_Database` (folder root tempat GPX disimpan).
-   Klik **Share**, tempel email service account yang sama, beri akses
-   **Editor**.
-   - Kalau kamu tidak yakin folder mana, cek `ROOT_FOLDER_ID` di `Config.gs`
-     lama, atau cari folder bernama `GPX_Run_Database` di Drive kamu.
-   - Catat **folder ID**-nya dari URL:
-     `https://drive.google.com/drive/folders/FOLDER_ID_DI_SINI`
+Kenapa perlu ini: Service Account itu "akun robot" yang **kuota penyimpanannya 0 byte** — walaupun folder Drive-nya sudah di-share sebagai Editor, dia tetap **tidak bisa membuat file baru** di situ (`Service Accounts do not have storage quota` error), karena Google mengharuskan file baru dimiliki oleh identitas yang punya kuota. Shared Drive (fitur Workspace) menyelesaikan ini karena kuotanya milik Shared Drive itu sendiri — tapi kalau kamu tidak punya Workspace, opsi itu tidak tersedia.
 
-> ⚠️ Penting: karena file/folder yang **dibuat baru** oleh service account
-> akan dimiliki oleh service account itu sendiri (bukan akun Google kamu),
-> pastikan folder root sudah ada dan sudah di-share sebagai **Editor**
-> *sebelum* deploy pertama — jangan biarkan service account membuat folder
-> root sendiri di Drive-nya sendiri, karena nanti kamu tidak akan melihatnya
-> di My Drive kamu.
+Solusinya: autentikasi sebagai **akun Google kamu sendiri** (bukan robot), supaya upload pakai kuota pribadimu.
 
-## Langkah 3 — Encode kredensial ke base64
+**1. Buat OAuth Client ID**
+- Buka [Google Cloud Console](https://console.cloud.google.com/) → project yang sama dengan sebelumnya
+- **APIs & Services → Credentials → Create Credentials → OAuth client ID**
+- Application type: **Desktop app**
+- Beri nama bebas (mis. `runnergpx-oauth`), klik Create
+- Catat **Client ID** dan **Client Secret** yang muncul
 
-File JSON dari Langkah 1 perlu di-encode ke base64 agar bisa disimpan
-sebagai satu environment variable di Vercel.
+**2. Setup OAuth consent screen** (kalau belum pernah)
+- **APIs & Services → OAuth consent screen**
+- User type: **External**
+- Isi nama app, email kamu — untuk "Scopes" tidak perlu diisi manual di sini
+- Di bagian **Test users**, tambahkan alamat Gmail kamu sendiri
+- Simpan (app akan berstatus "Testing" — itu tidak masalah, tidak perlu publish/verifikasi)
 
-**Di Mac/Linux:**
-```bash
-base64 -i service-account-key.json | tr -d '\n' > key.b64.txt
-```
+**3. Ambil Refresh Token lewat OAuth Playground** (tidak perlu install/jalankan apa pun)
+- Buka [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+- Klik ikon ⚙️ (Settings) di kanan atas → centang **"Use your own OAuth credentials"** → paste **Client ID** dan **Client Secret** dari langkah 1
+- Di panel kiri "Select & authorize APIs", cari dan centang dua scope ini:
+  - `https://www.googleapis.com/auth/spreadsheets`
+  - `https://www.googleapis.com/auth/drive`
+- Klik **Authorize APIs** → login pakai akun Gmail kamu yang 5TB itu → kalau muncul peringatan "Google hasn't verified this app", klik **Advanced → Go to [nama app] (unsafe)** — ini aman, karena itu app buatanmu sendiri
+- Setelah kembali ke Playground, klik **Exchange authorization code for tokens**
+- Copy nilai **Refresh token** yang muncul — itu yang kamu butuhkan
 
-**Di Windows (PowerShell):**
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("service-account-key.json")) | Out-File key.b64.txt
-```
+**4. Isi environment variables di Vercel**
+- `GOOGLE_OAUTH_CLIENT_ID` → dari langkah 1
+- `GOOGLE_OAUTH_CLIENT_SECRET` → dari langkah 1
+- `GOOGLE_OAUTH_REFRESH_TOKEN` → dari langkah 3
+- Biarkan `GOOGLE_SERVICE_ACCOUNT_KEY_B64` **kosong**
 
-Isi file `key.b64.txt` itulah yang akan jadi nilai env var
-`GOOGLE_SERVICE_ACCOUNT_KEY_B64`.
+**5. Tidak perlu share apa pun lagi**
+Karena ini akunmu sendiri, Sheet dan folder Drive yang sudah kamu miliki otomatis bisa diakses — tidak perlu langkah share-ke-email seperti Service Account. Kalau sebelumnya sempat men-share ke email service account, boleh dibiarkan saja (tidak mengganggu) atau dihapus.
 
-## Langkah 4 — Deploy ke Vercel
+### 1B — Service Account + Shared Drive (akun Google Workspace)
+
+Kalau kamu punya akses bikin Shared Drive, ikuti langkah-langkah lama (Service Account) TAPI dengan satu perubahan penting: folder root GPX-nya harus ada **di dalam Shared Drive**, bukan di My Drive biasa.
+
+**1. Buat Shared Drive**
+- Di Google Drive, klik **"Shared drives" → New**, beri nama (mis. `RunnerGPX Storage`)
+- Buat folder `GPX_Run_Database` di dalamnya, catat **folder ID**-nya dari URL
+
+**2. Buat Service Account** (sama seperti sebelumnya)
+- Google Cloud Console → aktifkan Sheets API + Drive API
+- Buat Service Account, download JSON key, base64-encode isinya (lihat bagian "Langkah 3" versi lama di bawah)
+
+**3. Tambahkan Service Account sebagai anggota Shared Drive**
+- Buka Shared Drive-nya → **Manage members** → tambahkan email service account sebagai **Content Manager** (atau Manager)
+- Share juga Spreadsheet-nya ke email service account sebagai Editor
+
+**4. Isi environment variables di Vercel**
+- `GOOGLE_SERVICE_ACCOUNT_KEY_B64` → base64 dari JSON key
+- `DRIVE_ROOT_FOLDER_ID` → folder ID dari langkah 1
+- Biarkan tiga `GOOGLE_OAUTH_*` kosong
+
+
+## Langkah 2 — Deploy ke Vercel
 
 1. Push folder project ini (`runnershub-vercel/`) ke repo GitHub baru.
 2. Di [vercel.com](https://vercel.com), **Add New → Project**, import repo
@@ -155,9 +165,18 @@ runnershub-vercel/
 
 ## Kalau ada error saat deploy
 
+- **`Service Accounts do not have storage quota`** → kamu pakai akun Gmail
+  pribadi (bukan Workspace) tapi masih pakai mode Service Account untuk
+  Drive. Pindah ke mode **OAuth2** (Langkah 1A).
 - **`GOOGLE_SERVICE_ACCOUNT_KEY_B64 is not set`** → env var belum diisi di
-  Vercel, atau belum redeploy setelah menambahkannya.
-- **`403` / `The caller does not have permission`** → Sheet atau folder
-  Drive belum di-share ke email service account (Langkah 2).
+  Vercel, atau belum redeploy setelah menambahkannya. (Hanya relevan kalau
+  pakai mode Service Account, Langkah 1B.)
+- **`403` / `The caller does not have permission`** → mode Service Account:
+  Sheet atau folder Drive belum di-share ke email service account.
 - **`Requested entity was not found`** saat akses Sheet → `SPREADSHEET_ID`
-  salah, atau Sheet belum di-share.
+  salah, atau Sheet belum di-share (mode Service Account) / bukan milik akun
+  yang login (mode OAuth2).
+- **`invalid_grant` saat OAuth2** → refresh token sudah tidak valid (biasanya
+  karena kamu mencabut akses aplikasi ini di
+  [myaccount.google.com/permissions](https://myaccount.google.com/permissions)).
+  Ulangi Langkah 1A bagian 3 untuk ambil refresh token baru.
