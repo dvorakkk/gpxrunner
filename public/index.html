@@ -155,6 +155,34 @@ a{color:var(--sky);text-decoration:none}
 .sg-th:hover{border-color:#e2e8f0}
 .sg-ig:hover{border-color:#f59e0b}
 
+.sg-verify-section{
+  display:none;
+  text-align:left;
+  background:var(--bg-700);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px;
+  margin-bottom:14px;
+}
+.sg-verify-section.show{display:block}
+.sg-verify-label{font-size:12px; color:var(--text-sec); margin:0 0 8px; font-weight:600}
+.sg-verify-label span{color:var(--sky)}
+.sg-verify-input{
+  width:100%; box-sizing:border-box;
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid var(--border);
+  background:var(--bg-800);
+  color:var(--text-pri);
+  font-size:13px;
+  margin-bottom:8px;
+}
+.sg-verify-input:focus{outline:none; border-color:var(--sky)}
+.sg-verify-btn{width:100%; justify-content:center}
+.sg-verify-error{
+  font-size:11px; color:var(--rose); margin:8px 0 0; min-height:14px;
+}
+
 .sg-mission-status{
   display:flex; align-items:center; justify-content:center; gap:8px;
   font-size:12px; font-weight:600; color:var(--text-dim);
@@ -1013,12 +1041,19 @@ textarea.form-input{resize:vertical;min-height:80px}
       </button>
     </div>
 
+    <div id="sg-verify-section" class="sg-verify-section">
+      <p class="sg-verify-label">Paste the link to your <span id="sg-verify-platform-name">post</span> below to verify:</p>
+      <input type="text" id="sg-verify-input" class="sg-verify-input" placeholder="https://…" autocomplete="off"/>
+      <button type="button" id="sg-verify-btn" class="btn btn-sky btn-sm sg-verify-btn">Verify &amp; Unlock</button>
+      <p id="sg-verify-error" class="sg-verify-error"></p>
+    </div>
+
     <div id="sg-mission-status" class="sg-mission-status">
       <span class="sg-dot"></span> Mission not completed yet
     </div>
 
     <button type="button" id="sg-download-btn" class="btn btn-emerald sg-download-btn" disabled>
-      🔒 Complete a share to unlock download
+      🔒 Verify your post link to unlock download
     </button>
 
     <div class="sg-divider"><span>or, if you'd like</span></div>
@@ -2468,7 +2503,7 @@ async function publishRoute() {
   btn.textContent = '⏳ Publishing…';
 
   let simPct = 6;
-  const label = '🚀 Uploading wait a moment…';
+  const label = '🚀 Uploading wait a moments…';
   setUploadProgress(simPct, label);
   const simTimer = setInterval(() => {
     const remaining = 90 - simPct;
@@ -2714,7 +2749,15 @@ async function performGpxDownload(routeId, btn) {
 const ShareGate = {
   routeId: null,
   triggerBtn: null,
-  missionDone: false
+  missionDone: false,
+  selectedPlatform: null
+};
+
+const SHARE_PLATFORM_META = {
+  x:         { label: 'X (Twitter)', domains: ['twitter.com', 'x.com'],       pathRe: /\/status\//i },
+  facebook:  { label: 'Facebook',    domains: ['facebook.com', 'fb.watch', 'm.facebook.com'], pathRe: null },
+  threads:   { label: 'Threads',     domains: ['threads.net', 'threads.com'], pathRe: /\/post\//i },
+  instagram: { label: 'Instagram',   domains: ['instagram.com'],              pathRe: /\/(p|reel|stories)\//i }
 };
 
 function shareGateUrlFor(routeId) {
@@ -2727,22 +2770,47 @@ function shareGateText(routeId) {
   return `Check out "${name}" on runnerGPX 🏃⛰️`;
 }
 
+/** Format-only check: does urlStr look like a real post link on the given
+ *  platform? This can't confirm the post's content or that it's actually
+ *  public — it only rules out blank/garbage input and obviously wrong links. */
+function isPlausiblePostUrl(platform, urlStr) {
+  const meta = SHARE_PLATFORM_META[platform];
+  if (!meta || !urlStr) return false;
+
+  let u;
+  try { u = new URL(urlStr.trim()); } catch (e) { return false; }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+
+  const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+  if (!meta.domains.includes(host)) return false;
+  if (meta.pathRe && !meta.pathRe.test(u.pathname)) return false;
+
+  return true;
+}
+
 function openShareGate(routeId, triggerBtn) {
-  ShareGate.routeId    = routeId;
-  ShareGate.triggerBtn = triggerBtn;
-  ShareGate.missionDone = false;
+  ShareGate.routeId         = routeId;
+  ShareGate.triggerBtn      = triggerBtn;
+  ShareGate.missionDone     = false;
+  ShareGate.selectedPlatform = null;
 
   const overlay = document.getElementById('share-gate-overlay');
   overlay.classList.add('show');
 
   document.querySelectorAll('.sg-share-btn').forEach(b => b.classList.remove('sg-done'));
+
+  const verifySection = document.getElementById('sg-verify-section');
+  verifySection.classList.remove('show');
+  document.getElementById('sg-verify-input').value = '';
+  document.getElementById('sg-verify-error').textContent = '';
+
   const statusEl = document.getElementById('sg-mission-status');
   statusEl.classList.remove('sg-complete');
   statusEl.innerHTML = '<span class="sg-dot"></span> Mission not completed yet';
 
   const dlBtn = document.getElementById('sg-download-btn');
   dlBtn.disabled = true;
-  dlBtn.innerHTML = '🔒 Complete a share to unlock download';
+  dlBtn.innerHTML = '🔒 Verify your post link to unlock download';
 }
 
 function closeShareGate() {
@@ -2762,6 +2830,9 @@ function completeShareMission() {
   dlBtn.innerHTML = '⬇️ Download GPX Now';
 }
 
+/** Opens the platform's compose window and reveals the "paste your link"
+ *  verification field for that platform. Does NOT unlock the download by
+ *  itself — the user still has to paste a plausible post link and verify. */
 function handleShareClick(platform) {
   const routeId = ShareGate.routeId;
   const url  = encodeURIComponent(shareGateUrlFor(routeId));
@@ -2780,21 +2851,50 @@ function handleShareClick(platform) {
       break;
     case 'instagram':
       // Instagram has no web share-intent URL — copy the caption instead
-      // and open Instagram so the user can paste it into a Story/DM.
+      // and open Instagram so the user can paste it into a Story/DM/post.
       const igCaption = decodeURIComponent(text) + ' ' + decodeURIComponent(url);
       if (navigator.clipboard) {
         navigator.clipboard.writeText(igCaption).catch(() => {});
       }
-      toast('Caption copied — paste it into your Instagram Story or DM', 'inf');
+      toast('Caption copied — paste it into your Instagram post, then come back and paste the post link below', 'inf');
       shareUrl = 'https://www.instagram.com/';
       break;
   }
 
   if (shareUrl) window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=520');
 
+  document.querySelectorAll('.sg-share-btn').forEach(b => b.classList.remove('sg-done'));
   const btnEl = document.querySelector(`.sg-share-btn[data-platform="${platform}"]`);
   if (btnEl) btnEl.classList.add('sg-done');
 
+  ShareGate.selectedPlatform = platform;
+  document.getElementById('sg-verify-platform-name').textContent = SHARE_PLATFORM_META[platform].label + ' post';
+  document.getElementById('sg-verify-input').value = '';
+  document.getElementById('sg-verify-error').textContent = '';
+  document.getElementById('sg-verify-section').classList.add('show');
+  document.getElementById('sg-verify-input').focus();
+}
+
+function handleVerifyClick() {
+  const platform = ShareGate.selectedPlatform;
+  const errEl    = document.getElementById('sg-verify-error');
+  const input    = document.getElementById('sg-verify-input');
+
+  if (!platform) {
+    errEl.textContent = 'Pick a platform above first.';
+    return;
+  }
+  const val = input.value.trim();
+  if (!val) {
+    errEl.textContent = 'Paste your post link first.';
+    return;
+  }
+  if (!isPlausiblePostUrl(platform, val)) {
+    errEl.textContent = `That doesn't look like a valid ${SHARE_PLATFORM_META[platform].label} post link. Double-check and try again.`;
+    return;
+  }
+
+  errEl.textContent = '';
   completeShareMission();
 }
 
@@ -2810,6 +2910,11 @@ function setupShareGateListeners() {
     b.addEventListener('click', () => handleShareClick(b.dataset.platform));
   });
 
+  document.getElementById('sg-verify-btn').addEventListener('click', handleVerifyClick);
+  document.getElementById('sg-verify-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); handleVerifyClick(); }
+  });
+
   document.getElementById('sg-download-btn').addEventListener('click', () => {
     if (!ShareGate.missionDone) return;
     localStorage.setItem(SHARE_UNLOCK_KEY, 'true');
@@ -2817,6 +2922,7 @@ function setupShareGateListeners() {
     performGpxDownload(ShareGate.routeId, ShareGate.triggerBtn);
   });
 }
+
 
 </script>
 <script>
