@@ -95,6 +95,105 @@ a{color:var(--sky);text-decoration:none}
 }
 #site-footer .fc-a{color:var(--emerald)}
 #site-footer .fc-m{color:var(--sky)}
+
+/* ─── SHARE-GATE MODAL ─────────────────────────────────────────────────── */
+.sg-overlay{
+  display:none;
+  position:fixed; inset:0; z-index:9000;
+  background:rgba(4,8,16,.72);
+  backdrop-filter:blur(3px);
+  align-items:center; justify-content:center;
+  padding:20px;
+}
+.sg-overlay.show{display:flex}
+.sg-modal{
+  position:relative;
+  width:100%; max-width:420px;
+  background:var(--bg-800);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-lg);
+  padding:28px 24px 24px;
+  text-align:center;
+  animation:sgPop .18s ease;
+}
+@keyframes sgPop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.sg-close{
+  position:absolute; top:12px; right:12px;
+  width:30px; height:30px; border-radius:50%;
+  background:var(--bg-700); border:1px solid var(--border);
+  color:var(--text-muted); font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:var(--transition);
+}
+.sg-close:hover{color:var(--text-pri); border-color:var(--border-l)}
+.sg-icon{font-size:34px; margin-bottom:8px}
+.sg-title{font-size:19px; font-weight:800; color:var(--text-pri); margin:0 0 8px; letter-spacing:-.3px}
+.sg-sub{font-size:13px; color:var(--text-muted); line-height:1.5; margin:0 0 20px}
+.sg-sub strong{color:var(--text-sec)}
+
+.sg-share-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  margin-bottom:16px;
+}
+.sg-share-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:12px 10px;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  background:var(--bg-700);
+  color:var(--text-pri);
+  font-size:13px; font-weight:700;
+  cursor:pointer;
+  transition:var(--transition);
+}
+.sg-share-icon{font-size:16px}
+.sg-share-btn:hover{border-color:var(--border-l); transform:translateY(-1px)}
+.sg-share-btn.sg-done{border-color:var(--emerald); background:var(--emerald-bg); color:var(--emerald)}
+.sg-x:hover{border-color:#e2e8f0}
+.sg-fb:hover{border-color:#38bdf8}
+.sg-th:hover{border-color:#e2e8f0}
+.sg-ig:hover{border-color:#f59e0b}
+
+.sg-mission-status{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  font-size:12px; font-weight:600; color:var(--text-dim);
+  margin-bottom:14px;
+}
+.sg-dot{width:8px; height:8px; border-radius:50%; background:var(--text-dim)}
+.sg-mission-status.sg-complete{color:var(--emerald)}
+.sg-mission-status.sg-complete .sg-dot{background:var(--emerald); box-shadow:0 0 8px var(--emerald)}
+
+.sg-download-btn{
+  width:100%; justify-content:center;
+  opacity:.5; cursor:not-allowed;
+}
+.sg-download-btn:not(:disabled){
+  opacity:1; cursor:pointer;
+}
+
+.sg-divider{
+  display:flex; align-items:center; gap:10px;
+  margin:20px 0 14px;
+  color:var(--text-dim); font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.4px;
+}
+.sg-divider::before,.sg-divider::after{
+  content:''; flex:1; height:1px; background:var(--border);
+}
+
+.sg-saweria-btn{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; padding:12px;
+  border-radius:var(--radius);
+  border:1px solid var(--amber);
+  background:var(--amber-bg);
+  color:var(--amber);
+  font-size:13px; font-weight:700;
+  text-decoration:none;
+  transition:var(--transition);
+}
+.sg-saweria-btn:hover{filter:brightness(1.15); transform:translateY(-1px)}
 .nav-tabs{display:flex;gap:2px;flex:1}
 .nav-tab{
   display:flex;align-items:center;gap:7px;padding:8px 16px;
@@ -885,6 +984,48 @@ textarea.form-input{resize:vertical;min-height:80px}
         <div id="rd-elevation-chart"></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SHARE-TO-UNLOCK MODAL — shown before the first GPX download
+═══════════════════════════════════════════════════════════ -->
+<div id="share-gate-overlay" class="sg-overlay">
+  <div class="sg-modal">
+    <button type="button" id="sg-close-btn" class="sg-close" aria-label="Close">✕</button>
+
+    <div class="sg-icon">🚀</div>
+    <h2 class="sg-title">One quick favor before you download</h2>
+    <p class="sg-sub">Help other runners discover this route — share it on <strong>any one</strong> platform below, then your download unlocks. One time only, promise.</p>
+
+    <div class="sg-share-grid">
+      <button type="button" class="sg-share-btn sg-x" data-platform="x">
+        <span class="sg-share-icon">𝕏</span> Twitter / X
+      </button>
+      <button type="button" class="sg-share-btn sg-fb" data-platform="facebook">
+        <span class="sg-share-icon">📘</span> Facebook
+      </button>
+      <button type="button" class="sg-share-btn sg-th" data-platform="threads">
+        <span class="sg-share-icon">🧵</span> Threads
+      </button>
+      <button type="button" class="sg-share-btn sg-ig" data-platform="instagram">
+        <span class="sg-share-icon">📸</span> Instagram
+      </button>
+    </div>
+
+    <div id="sg-mission-status" class="sg-mission-status">
+      <span class="sg-dot"></span> Mission not completed yet
+    </div>
+
+    <button type="button" id="sg-download-btn" class="btn btn-emerald sg-download-btn" disabled>
+      🔒 Complete a share to unlock download
+    </button>
+
+    <div class="sg-divider"><span>or, if you'd like</span></div>
+
+    <a id="sg-saweria-link" class="sg-saweria-btn" href="https://saweria.co/siam" target="_blank" rel="noopener noreferrer">
+      ☕ Buy me a coffee on Saweria
+    </a>
   </div>
 </div>
 
@@ -2327,7 +2468,7 @@ async function publishRoute() {
   btn.textContent = '⏳ Publishing…';
 
   let simPct = 6;
-  const label = '🚀 Uploading wait a moments…';
+  const label = '🚀 Uploading wait a moment…';
   setUploadProgress(simPct, label);
   const simTimer = setInterval(() => {
     const remaining = 90 - simPct;
@@ -2518,14 +2659,28 @@ function updateCachedCommentCount(routeId, count) {
 
 // ─── GPX DOWNLOAD ─────────────────────────────────────────────────────────────
 
-async function onDownloadGpx(event, btn) {
+const SHARE_UNLOCK_KEY = 'rgpx_share_unlocked';
+
+/** Entry point wired to .download-btn clicks. Gates the real download behind
+ *  the share-to-unlock modal, unless the user has already unlocked it once
+ *  on this device. */
+function onDownloadGpx(event, btn) {
   event.stopPropagation();
   const routeId = btn.dataset.routeId;
   if (!routeId) return;
 
-  const originalHtml = btn.innerHTML;
-  btn.disabled  = true;
-  btn.innerHTML = '⏳';
+  if (localStorage.getItem(SHARE_UNLOCK_KEY) === 'true') {
+    performGpxDownload(routeId, btn);
+    return;
+  }
+  openShareGate(routeId, btn);
+}
+
+/** Does the actual API call + file save. Called either directly (already
+ *  unlocked) or from the modal's "Download" button once a mission is done. */
+async function performGpxDownload(routeId, btn) {
+  const originalHtml = btn ? btn.innerHTML : null;
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳'; }
 
   try {
     const res = await callApi('getGpxDownload', { routeId });
@@ -2550,10 +2705,119 @@ async function onDownloadGpx(event, btn) {
   } catch(e) {
     toast('Download failed: ' + e.message, 'err');
   } finally {
-    btn.disabled  = false;
-    btn.innerHTML = originalHtml;
+    if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
   }
 }
+
+// ─── SHARE-GATE MODAL ───────────────────────────────────────────────────────
+
+const ShareGate = {
+  routeId: null,
+  triggerBtn: null,
+  missionDone: false
+};
+
+function shareGateUrlFor(routeId) {
+  return window.location.origin + window.location.pathname + '#route/' + routeId;
+}
+
+function shareGateText(routeId) {
+  const route = findRouteInCache(routeId);
+  const name = route ? route.route_name : 'this route';
+  return `Check out "${name}" on runnerGPX 🏃⛰️`;
+}
+
+function openShareGate(routeId, triggerBtn) {
+  ShareGate.routeId    = routeId;
+  ShareGate.triggerBtn = triggerBtn;
+  ShareGate.missionDone = false;
+
+  const overlay = document.getElementById('share-gate-overlay');
+  overlay.classList.add('show');
+
+  document.querySelectorAll('.sg-share-btn').forEach(b => b.classList.remove('sg-done'));
+  const statusEl = document.getElementById('sg-mission-status');
+  statusEl.classList.remove('sg-complete');
+  statusEl.innerHTML = '<span class="sg-dot"></span> Mission not completed yet';
+
+  const dlBtn = document.getElementById('sg-download-btn');
+  dlBtn.disabled = true;
+  dlBtn.innerHTML = '🔒 Complete a share to unlock download';
+}
+
+function closeShareGate() {
+  document.getElementById('share-gate-overlay').classList.remove('show');
+}
+
+function completeShareMission() {
+  if (ShareGate.missionDone) return;
+  ShareGate.missionDone = true;
+
+  const statusEl = document.getElementById('sg-mission-status');
+  statusEl.classList.add('sg-complete');
+  statusEl.innerHTML = '<span class="sg-dot"></span> Mission complete — thank you! 🎉';
+
+  const dlBtn = document.getElementById('sg-download-btn');
+  dlBtn.disabled = false;
+  dlBtn.innerHTML = '⬇️ Download GPX Now';
+}
+
+function handleShareClick(platform) {
+  const routeId = ShareGate.routeId;
+  const url  = encodeURIComponent(shareGateUrlFor(routeId));
+  const text = encodeURIComponent(shareGateText(routeId));
+
+  let shareUrl = null;
+  switch (platform) {
+    case 'x':
+      shareUrl = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+      break;
+    case 'facebook':
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+      break;
+    case 'threads':
+      shareUrl = `https://www.threads.net/intent/post?text=${text}%20${url}`;
+      break;
+    case 'instagram':
+      // Instagram has no web share-intent URL — copy the caption instead
+      // and open Instagram so the user can paste it into a Story/DM.
+      const igCaption = decodeURIComponent(text) + ' ' + decodeURIComponent(url);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(igCaption).catch(() => {});
+      }
+      toast('Caption copied — paste it into your Instagram Story or DM', 'inf');
+      shareUrl = 'https://www.instagram.com/';
+      break;
+  }
+
+  if (shareUrl) window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=520');
+
+  const btnEl = document.querySelector(`.sg-share-btn[data-platform="${platform}"]`);
+  if (btnEl) btnEl.classList.add('sg-done');
+
+  completeShareMission();
+}
+
+function setupShareGateListeners() {
+  const overlay = document.getElementById('share-gate-overlay');
+
+  document.getElementById('sg-close-btn').addEventListener('click', closeShareGate);
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeShareGate();
+  });
+
+  document.querySelectorAll('.sg-share-btn').forEach(b => {
+    b.addEventListener('click', () => handleShareClick(b.dataset.platform));
+  });
+
+  document.getElementById('sg-download-btn').addEventListener('click', () => {
+    if (!ShareGate.missionDone) return;
+    localStorage.setItem(SHARE_UNLOCK_KEY, 'true');
+    closeShareGate();
+    performGpxDownload(ShareGate.routeId, ShareGate.triggerBtn);
+  });
+}
+
 </script>
 <script>
 /* ─── JS_Detail.html ────────────────────────────────────────────────────────
@@ -3186,6 +3450,7 @@ async function init() {
   setupExploreFilters();
   setupUploadTab();
   setupSocialListeners();
+  setupShareGateListeners();
   setupRouteDetailListeners();
   setupKeyboardShortcuts();
 
